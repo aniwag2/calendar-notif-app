@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"net"
 	"net/http"
 	"regexp"
@@ -104,30 +105,72 @@ func (h *Handlers) Setup(w http.ResponseWriter, r *http.Request) {
 	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
 	password := r.FormValue("password")
 
-	fail := func(msg string) {
+	u, msg := h.createOrgAndAdmin(r.Context(), orgName, slug, name, email, password)
+	if msg != "" {
 		h.View.Render(w, http.StatusBadRequest, "setup", map[string]any{"Error": msg})
-	}
-	if orgName == "" || slug == "" || name == "" || email == "" {
-		fail("All fields are required.")
 		return
+	}
+	_ = h.Auth.Login(w, r, u.ID)
+	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+// createOrgAndAdmin validates input and creates an organization plus its first
+// admin user. It returns the new admin, or a user-facing error message.
+func (h *Handlers) createOrgAndAdmin(ctx context.Context, orgName, slug, name, email, password string) (*models.User, string) {
+	if orgName == "" || slug == "" || name == "" || email == "" {
+		return nil, "All fields are required."
 	}
 	if !validPassword(password) {
-		fail("Password must be at least 8 characters and include a number and a special character.")
-		return
+		return nil, "Password must be at least 8 characters and include a number and a special character."
 	}
-	org, err := h.Store.CreateOrganization(r.Context(), orgName, slug)
+	// Pre-checks avoid creating an org with no admin if the email/slug clashes.
+	if exists, _ := h.Store.EmailExists(ctx, email); exists {
+		return nil, "An account with this email already exists."
+	}
+	if _, err := h.Store.OrganizationBySlug(ctx, slug); err == nil {
+		return nil, "That facility code is already taken. Please choose another."
+	}
+	org, err := h.Store.CreateOrganization(ctx, orgName, slug)
 	if err != nil {
-		fail("Could not create organization (is the facility code already taken?).")
-		return
+		return nil, "Could not create organization (is the facility code already taken?)."
 	}
 	hash, err := auth.HashPassword(password)
 	if err != nil {
-		fail("Internal error.")
+		return nil, "Internal error."
+	}
+	u, err := h.Store.CreateUser(ctx, org.ID, name, email, hash, "admin")
+	if err != nil {
+		return nil, "Could not create admin (is the email already in use?)."
+	}
+	return u, ""
+}
+
+// SignupForm renders the self-serve organization signup page.
+func (h *Handlers) SignupForm(w http.ResponseWriter, r *http.Request) {
+	if auth.UserFrom(r.Context()) != nil {
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 		return
 	}
-	u, err := h.Store.CreateUser(r.Context(), org.ID, name, email, hash, "admin")
-	if err != nil {
-		fail("Could not create admin (is the email already in use?).")
+	h.View.Render(w, http.StatusOK, "signup", map[string]any{"Closed": !h.Cfg.SignupOpen})
+}
+
+// Signup creates a new organization and its first admin (self-serve).
+func (h *Handlers) Signup(w http.ResponseWriter, r *http.Request) {
+	if !h.Cfg.SignupOpen {
+		h.View.Render(w, http.StatusForbidden, "signup", map[string]any{"Closed": true})
+		return
+	}
+	orgName := strings.TrimSpace(r.FormValue("orgname"))
+	slug := slugify(r.FormValue("slug"))
+	name := strings.TrimSpace(r.FormValue("name"))
+	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
+	password := r.FormValue("password")
+
+	u, msg := h.createOrgAndAdmin(r.Context(), orgName, slug, name, email, password)
+	if msg != "" {
+		h.View.Render(w, http.StatusBadRequest, "signup", map[string]any{
+			"Error": msg, "OrgName": orgName, "Slug": slug, "Name": name, "Email": email,
+		})
 		return
 	}
 	_ = h.Auth.Login(w, r, u.ID)

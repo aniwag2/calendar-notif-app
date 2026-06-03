@@ -18,6 +18,7 @@ type Config struct {
 	DatabaseURL   string // postgres connection string
 	SessionSecret []byte // key for signing session cookies
 	SecureCookies bool   // set Secure flag on cookies (true behind HTTPS)
+	SignupOpen    bool   // allow self-serve organization signup at /signup
 
 	// SMTP
 	SMTPHost string
@@ -43,6 +44,7 @@ func Load() (*Config, error) {
 		LogoutURL:     getenv("LOGOUT_URL", "https://theralert.aniwaghray.com"),
 		DatabaseURL:   os.Getenv("DATABASE_URL"),
 		SecureCookies: getenv("SECURE_COOKIES", "false") == "true",
+		SignupOpen:    getenv("SIGNUP_OPEN", "true") == "true",
 		SMTPHost:      os.Getenv("SMTP_HOST"),
 		SMTPPort:      getenv("SMTP_PORT", "587"),
 		SMTPUser:      os.Getenv("SMTP_USER"),

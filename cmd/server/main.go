@@ -61,6 +61,8 @@ func main() {
 	r.Get("/clock", h.Clock)
 	r.Get("/setup", h.SetupForm)
 	r.Post("/setup", h.Setup)
+	r.Get("/signup", h.SignupForm)
+	r.Post("/signup", h.Signup)
 	r.Get("/login", h.LoginForm)
 	r.Post("/login", h.Login)
 	r.Get("/register", h.RegisterForm)

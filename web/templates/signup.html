@@ -1,0 +1,54 @@
+{{define "title"}}Register your facility · Theralert{{end}}
+{{define "content"}}
+<div class="min-h-[70vh] flex items-center justify-center">
+  <div class="w-full max-w-md card">
+    <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">Register your facility</h1>
+    <p class="text-center text-gray-500 mb-6">Create a new organization and your admin account</p>
+
+    {{if .Closed}}
+    <div class="rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 text-sm text-center">
+      New facility signups are currently closed. Please contact us to get set up.
+    </div>
+    <p class="text-center text-sm text-gray-500 mt-6">
+      <a href="/login" class="text-indigo-600 font-medium hover:underline">Back to sign in</a>
+    </p>
+    {{else}}
+
+    {{if .Error}}
+    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/signup" class="space-y-4">
+      <div>
+        <label class="label" for="orgname">Facility name</label>
+        <input class="input" id="orgname" name="orgname" type="text" required value="{{.OrgName}}" placeholder="Sunrise Manor">
+      </div>
+      <div>
+        <label class="label" for="slug">Facility code (used by your staff &amp; families to register)</label>
+        <input class="input" id="slug" name="slug" type="text" required value="{{.Slug}}" placeholder="sunrise-manor">
+        <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers, and hyphens. Must be unique.</p>
+      </div>
+      <hr class="my-2">
+      <div>
+        <label class="label" for="name">Your name (admin)</label>
+        <input class="input" id="name" name="name" type="text" required value="{{.Name}}">
+      </div>
+      <div>
+        <label class="label" for="email">Your email (admin)</label>
+        <input class="input" id="email" name="email" type="email" required value="{{.Email}}">
+      </div>
+      <div>
+        <label class="label" for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" required>
+        <p class="text-xs text-gray-500 mt-1">At least 8 characters, including a number and a special character.</p>
+      </div>
+      <button class="btn-primary w-full" type="submit">Create facility</button>
+    </form>
+
+    <p class="text-center text-sm text-gray-500 mt-6">
+      Already have an account? <a href="/login" class="text-indigo-600 font-medium hover:underline">Sign in</a>
+    </p>
+    {{end}}
+  </div>
+</div>
+{{end}}
