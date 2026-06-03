@@ -231,6 +231,9 @@ func (h *Handlers) Admin(w http.ResponseWriter, r *http.Request) {
 	if msg := r.URL.Query().Get("flash"); msg != "" {
 		data["Flash"] = msg
 	}
+	if msg := r.URL.Query().Get("error"); msg != "" {
+		data["Error"] = msg
+	}
 	h.View.Render(w, http.StatusOK, "admin", data)
 }
 
@@ -321,6 +324,16 @@ func (h *Handlers) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		data["Error"] = "Incorrect password. Account not deleted."
 		h.View.Render(w, http.StatusUnauthorized, "profile", data)
 		return
+	}
+	// Guard: the last admin cannot delete their account without breaking the org.
+	if u.Role == "admin" {
+		n, _ := h.Store.CountAdmins(r.Context(), u.OrgID)
+		if n <= 1 {
+			data := h.view(r)
+			data["Error"] = "You are the only admin. Promote another admin first, or delete the organization from the Admin page."
+			h.View.Render(w, http.StatusConflict, "profile", data)
+			return
+		}
 	}
 	if err := h.Store.DeleteUser(r.Context(), u.ID); err != nil {
 		data := h.view(r)

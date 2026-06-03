@@ -1,0 +1,167 @@
+{{define "title"}}Calendar · Theralert{{end}}
+{{define "content"}}
+<div class="space-y-6">
+  <div class="flex flex-wrap items-end justify-between gap-4 no-print">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Calendar</h1>
+      <p class="text-gray-500">{{.Org.Name}}</p>
+    </div>
+    <div class="flex items-end gap-3">
+      {{if .Groups}}
+      <form method="get" action="/calendar">
+        <label class="label" for="group">Group</label>
+        <select class="input" id="group" name="group" onchange="this.form.submit()">
+          {{$sel := .Selected}}
+          {{range .Groups}}
+          <option value="{{.ID}}" {{if and $sel (eq .ID $sel.ID)}}selected{{end}}>{{.Name}}{{if .PatientName}} · {{.PatientName}}{{end}}</option>
+          {{end}}
+        </select>
+      </form>
+      {{end}}
+      <button onclick="window.print()" class="btn-secondary">Print</button>
+    </div>
+  </div>
+
+  {{if .Flash}}
+  <div class="rounded-lg bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm no-print">{{.Flash}}</div>
+  {{end}}
+  {{if .Error}}
+  <div class="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm no-print">{{.Error}}</div>
+  {{end}}
+
+  {{if .NoGroups}}
+  <div class="card text-center text-gray-500">
+    {{if .User.IsStaffSide}}No groups yet. <a href="/groups" class="text-indigo-600 hover:underline">Create one</a> to start scheduling.
+    {{else}}You're not part of any group yet. Your facility's staff will add you.{{end}}
+  </div>
+  {{else}}
+
+  <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Calendar -->
+    <div class="lg:col-span-3 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">{{.MonthLabel}}</h2>
+        <div class="flex items-center gap-2 no-print">
+          <a class="btn-secondary py-1.5 px-3" href="/calendar?group={{.Selected.ID}}&y={{.PrevY}}&m={{.PrevM}}">←</a>
+          <a class="btn-secondary py-1.5 px-3" href="/calendar?group={{.Selected.ID}}">Today</a>
+          <a class="btn-secondary py-1.5 px-3" href="/calendar?group={{.Selected.ID}}&y={{.NextY}}&m={{.NextM}}">→</a>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex flex-wrap gap-4 text-xs text-gray-600">
+        <span class="inline-flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-therapy"></span>Therapy</span>
+        <span class="inline-flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-activity"></span>Activity</span>
+        <span class="inline-flex items-center gap-1.5"><span class="h-3 w-3 rounded-sm bg-appointment"></span>Dr. appointment</span>
+      </div>
+
+      <div class="overflow-hidden rounded-xl border border-gray-200 bg-white print-border">
+        <div class="grid grid-cols-7 bg-gray-50 text-xs font-semibold text-gray-500">
+          <div class="px-2 py-2 text-center">Sun</div>
+          <div class="px-2 py-2 text-center">Mon</div>
+          <div class="px-2 py-2 text-center">Tue</div>
+          <div class="px-2 py-2 text-center">Wed</div>
+          <div class="px-2 py-2 text-center">Thu</div>
+          <div class="px-2 py-2 text-center">Fri</div>
+          <div class="px-2 py-2 text-center">Sat</div>
+        </div>
+        {{range .Weeks}}
+        <div class="grid grid-cols-7 border-t border-gray-200">
+          {{range .}}
+          <div class="min-h-[6rem] border-r border-gray-100 last:border-r-0 p-1.5 align-top
+                      {{if not .InMonth}}bg-gray-50/60 text-gray-400{{end}}">
+            <div class="text-right text-xs {{if .IsToday}}font-bold{{end}}">
+              <span class="{{if .IsToday}}inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white{{end}}">{{.Date.Day}}</span>
+            </div>
+            <div class="mt-1 space-y-1">
+              {{range .Occurrences}}
+              <div class="rounded px-1.5 py-0.5 text-[11px] leading-tight text-white truncate
+                          {{if eq .Event.Category "therapy"}}bg-therapy{{else if eq .Event.Category "appointment"}}bg-appointment{{else}}bg-activity{{end}}"
+                   title="{{.Start.Format "3:04 PM"}} — {{.Event.Title}}{{if .Event.Description}}: {{.Event.Description}}{{end}}">
+                <span class="font-medium">{{.Start.Format "3:04 PM"}}</span> {{.Event.Title}}
+                {{if eq .Event.Recurrence "weekly"}}<span title="repeats weekly">↻</span>{{end}}
+              </div>
+              {{end}}
+            </div>
+          </div>
+          {{end}}
+        </div>
+        {{end}}
+      </div>
+    </div>
+
+    <!-- Sidebar: log event + recent -->
+    <div class="lg:col-span-1 space-y-6 no-print">
+      {{if .CanEdit}}
+      <div class="card">
+        <h2 class="text-lg font-semibold mb-3">Log / schedule</h2>
+        <form method="post" action="/events" class="space-y-3">
+          <input type="hidden" name="group_id" value="{{.Selected.ID}}">
+          <div>
+            <label class="label" for="title">Title</label>
+            <input class="input" id="title" name="title" type="text" required placeholder="e.g. Physical therapy">
+          </div>
+          <div>
+            <label class="label" for="category">Category</label>
+            <select class="input" id="category" name="category">
+              <option value="activity">Activity</option>
+              <option value="therapy">Therapy</option>
+              <option value="appointment">Dr. appointment</option>
+            </select>
+          </div>
+          <div>
+            <label class="label" for="description">Details (optional)</label>
+            <textarea class="input" id="description" name="description" rows="2"></textarea>
+          </div>
+          <fieldset class="space-y-2">
+            <label class="flex items-center gap-2 text-sm">
+              <input type="radio" name="when" value="now" checked onchange="document.getElementById('dt').disabled=true">
+              Log now (happening now)
+            </label>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="radio" name="when" value="scheduled" onchange="document.getElementById('dt').disabled=false">
+              Schedule for…
+            </label>
+            <input class="input" id="dt" name="datetime" type="datetime-local" disabled>
+          </fieldset>
+          <div>
+            <label class="label" for="recurrence">Repeat</label>
+            <select class="input" id="recurrence" name="recurrence">
+              <option value="none">Once</option>
+              <option value="weekly">Every week</option>
+            </select>
+          </div>
+          <button class="btn-primary w-full" type="submit">Add event</button>
+        </form>
+      </div>
+      {{end}}
+
+      <div class="card">
+        <h2 class="text-lg font-semibold mb-3">Recent</h2>
+        <ul class="space-y-2">
+          {{range .Recent}}
+          <li class="flex items-start justify-between gap-2 text-sm">
+            <div>
+              <span class="inline-block h-2 w-2 rounded-full align-middle
+                {{if eq .Category "therapy"}}bg-therapy{{else if eq .Category "appointment"}}bg-appointment{{else}}bg-activity{{end}}"></span>
+              <span class="font-medium">{{.Title}}</span>
+              <span class="text-gray-400">· {{.StartsAt.Format "Jan 2, 3:04 PM"}}{{if eq .Recurrence "weekly"}} ↻{{end}}</span>
+            </div>
+            {{if $.CanEdit}}
+            <form method="post" action="/events/delete">
+              <input type="hidden" name="event_id" value="{{.ID}}">
+              <input type="hidden" name="group_id" value="{{$.Selected.ID}}">
+              <button class="text-xs text-red-500 hover:underline">×</button>
+            </form>
+            {{end}}
+          </li>
+          {{else}}
+          <li class="text-sm text-gray-400">No events yet.</li>
+          {{end}}
+        </ul>
+      </div>
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}

@@ -44,6 +44,7 @@
               <th class="py-2 pr-4 font-medium">Name</th>
               <th class="py-2 pr-4 font-medium">Email</th>
               <th class="py-2 pr-4 font-medium">Role</th>
+              <th class="py-2 pr-4 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -58,14 +59,47 @@
                   {{else if eq .Role "patient"}}bg-green-100 text-green-700
                   {{else}}bg-amber-100 text-amber-700{{end}}">{{.Role}}</span>
               </td>
+              <td class="py-2 pr-4 text-right">
+                {{if eq .Role "staff"}}
+                <form method="post" action="/admin/role" class="inline">
+                  <input type="hidden" name="user_id" value="{{.ID}}">
+                  <input type="hidden" name="role" value="admin">
+                  <button class="text-xs font-medium text-purple-700 hover:underline">Make admin</button>
+                </form>
+                {{else if eq .Role "admin"}}
+                <form method="post" action="/admin/role" class="inline">
+                  <input type="hidden" name="user_id" value="{{.ID}}">
+                  <input type="hidden" name="role" value="staff">
+                  <button class="text-xs font-medium text-gray-500 hover:underline">Demote to staff</button>
+                </form>
+                {{else}}
+                <span class="text-xs text-gray-300">—</span>
+                {{end}}
+              </td>
             </tr>
             {{else}}
-            <tr><td colspan="3" class="py-4 text-center text-gray-400">No users yet.</td></tr>
+            <tr><td colspan="4" class="py-4 text-center text-gray-400">No users yet.</td></tr>
             {{end}}
           </tbody>
         </table>
       </div>
     </div>
+  </div>
+
+  <div class="card border border-red-200">
+    <h2 class="text-xl font-semibold text-red-700 mb-2">Danger zone</h2>
+    <p class="text-sm text-gray-500 mb-4">
+      Permanently delete <strong>{{.Org.Name}}</strong> and <strong>all</strong> of its staff, patients,
+      family members, groups, and events. This cannot be undone.
+    </p>
+    <form method="post" action="/admin/org/delete" class="flex flex-col sm:flex-row gap-3 sm:items-end"
+          onsubmit="return confirm('Permanently delete this entire organization and all its data?');">
+      <div class="flex-1">
+        <label class="label" for="confirm">Type the facility code <code class="bg-gray-100 px-1 rounded">{{.Org.Slug}}</code> to confirm</label>
+        <input class="input" id="confirm" name="confirm" type="text" autocomplete="off" placeholder="{{.Org.Slug}}">
+      </div>
+      <button class="btn-danger" type="submit">Delete organization</button>
+    </form>
   </div>
 </div>
 {{end}}

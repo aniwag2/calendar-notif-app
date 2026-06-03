@@ -147,3 +147,23 @@ func (s *Store) UpdatePassword(ctx context.Context, id int64, passwordHash strin
 	_, err := s.pool.Exec(ctx, `UPDATE users SET password_hash = $1 WHERE id = $2`, passwordHash, id)
 	return err
 }
+
+// SetRole changes a user's role.
+func (s *Store) SetRole(ctx context.Context, id int64, role string) error {
+	_, err := s.pool.Exec(ctx, `UPDATE users SET role = $1 WHERE id = $2`, role, id)
+	return err
+}
+
+// CountAdmins returns how many admins an org has.
+func (s *Store) CountAdmins(ctx context.Context, orgID int64) (int, error) {
+	var n int
+	err := s.pool.QueryRow(ctx,
+		`SELECT count(*) FROM users WHERE org_id = $1 AND role = 'admin'`, orgID).Scan(&n)
+	return n, err
+}
+
+// DeleteOrganization removes an org and (via FK cascade) all its users and data.
+func (s *Store) DeleteOrganization(ctx context.Context, orgID int64) error {
+	_, err := s.pool.Exec(ctx, `DELETE FROM organizations WHERE id = $1`, orgID)
+	return err
+}

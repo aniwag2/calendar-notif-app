@@ -72,7 +72,19 @@ func main() {
 		pr.Get("/profile", h.Profile)
 		pr.Post("/profile/password", h.ChangePassword)
 		pr.Post("/profile/delete", h.DeleteAccount)
-		pr.Get("/events", h.Events)
+		pr.Get("/calendar", h.Calendar)
+		pr.Get("/sse", h.Events)
+	})
+
+	// Staff/admin routes (groups + event management).
+	r.Group(func(sr chi.Router) {
+		sr.Use(auth.RequireAuth)
+		sr.Use(auth.RequireRole("admin", "staff"))
+		sr.Get("/groups", h.Groups)
+		sr.Post("/groups", h.CreateGroup)
+		sr.Post("/groups/delete", h.DeleteGroup)
+		sr.Post("/events", h.CreateEvent)
+		sr.Post("/events/delete", h.DeleteEvent)
 	})
 
 	// Admin-only routes.
@@ -81,6 +93,8 @@ func main() {
 		ar.Use(auth.RequireRole("admin"))
 		ar.Get("/admin", h.Admin)
 		ar.Post("/admin/staff", h.CreateStaff)
+		ar.Post("/admin/role", h.SetRole)
+		ar.Post("/admin/org/delete", h.DeleteOrg)
 	})
 
 	srv := &http.Server{

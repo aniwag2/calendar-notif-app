@@ -11,26 +11,28 @@
   </div>
 
   {{if .User.IsStaffSide}}
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <div class="card">
-      <h2 class="text-xl font-semibold mb-2">Groups</h2>
-      <p class="text-gray-500 text-sm">Create and manage patient groups. <span class="italic">(Coming in Phase 2)</span></p>
-    </div>
-    <div class="card">
-      <h2 class="text-xl font-semibold mb-2">Log activity</h2>
-      <p class="text-gray-500 text-sm">Log activities and events in real time. <span class="italic">(Coming in Phase 2)</span></p>
-    </div>
-    <div class="card lg:col-span-2">
-      <h2 class="text-xl font-semibold mb-2">Calendar</h2>
-      <p class="text-gray-500 text-sm">Color-coded, printable calendar with recurring and one-time events. <span class="italic">(Coming in Phase 2)</span></p>
-    </div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <a href="/groups" class="card hover:shadow-lg transition-shadow">
+      <h2 class="text-xl font-semibold mb-2">Groups →</h2>
+      <p class="text-gray-500 text-sm">Create and manage patient groups with their family members.</p>
+    </a>
+    <a href="/calendar" class="card hover:shadow-lg transition-shadow">
+      <h2 class="text-xl font-semibold mb-2">Calendar →</h2>
+      <p class="text-gray-500 text-sm">Log activities in real time, schedule one-time and weekly events, print the month.</p>
+    </a>
+    {{if eq .User.Role "admin"}}
+    <a href="/admin" class="card hover:shadow-lg transition-shadow">
+      <h2 class="text-xl font-semibold mb-2">Admin →</h2>
+      <p class="text-gray-500 text-sm">Add staff, manage admin roles, and organization settings.</p>
+    </a>
+    {{end}}
   </div>
   {{else}}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <div class="card">
-      <h2 class="text-xl font-semibold mb-2">Your calendar</h2>
-      <p class="text-gray-500 text-sm">Activities and events for your group. <span class="italic">(Coming in Phase 2)</span></p>
-    </div>
+    <a href="/calendar" class="card hover:shadow-lg transition-shadow">
+      <h2 class="text-xl font-semibold mb-2">Your calendar →</h2>
+      <p class="text-gray-500 text-sm">See activities and events scheduled for your group.</p>
+    </a>
     <div class="card">
       <h2 class="text-xl font-semibold mb-2">Notifications</h2>
       <p class="text-gray-500 text-sm">Live updates and mute settings. <span class="italic">(Coming in Phase 3)</span></p>

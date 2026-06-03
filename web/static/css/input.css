@@ -25,3 +25,13 @@
     @apply bg-white rounded-xl shadow-md p-6;
   }
 }
+
+/* Print: show only the calendar grid, expand it to full width. */
+@media print {
+  nav, .no-print { display: none !important; }
+  main { max-width: none !important; padding: 0 !important; }
+  .print-border { border-color: #999 !important; }
+  .min-h-\[6rem\] { min-height: 5rem; }
+  /* Ensure category colors print (browsers strip backgrounds by default). */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
