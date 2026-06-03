@@ -1,0 +1,48 @@
+{{define "title"}}Notifications · Theralert{{end}}
+{{define "content"}}
+<div class="max-w-3xl mx-auto space-y-8">
+  <div class="flex items-end justify-between">
+    <h1 class="text-3xl font-bold text-gray-900">Notifications</h1>
+    {{if .Notifications}}
+    <form method="post" action="/notifications/read">
+      <button class="btn-secondary text-sm">Mark all read</button>
+    </form>
+    {{end}}
+  </div>
+
+  {{if .Flash}}
+  <div class="rounded-lg bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm">{{.Flash}}</div>
+  {{end}}
+
+  <div class="card">
+    <ul class="divide-y divide-gray-100">
+      {{range .Notifications}}
+      <li class="py-3 flex items-start gap-3">
+        <span class="mt-1.5 h-2 w-2 flex-none rounded-full {{if .ReadAt}}bg-gray-300{{else}}bg-indigo-500{{end}}"></span>
+        <div class="flex-1">
+          <p class="text-sm {{if not .ReadAt}}font-medium{{end}}">{{.Message}}</p>
+          <p class="text-xs text-gray-400">{{tfmt "Mon Jan 2, 3:04 PM" .CreatedAt}}</p>
+        </div>
+      </li>
+      {{else}}
+      <li class="py-6 text-center text-gray-400 text-sm">No notifications yet.</li>
+      {{end}}
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2 class="text-xl font-semibold mb-1">Mute settings</h2>
+    <p class="text-sm text-gray-500 mb-4">Check a box to stop receiving notifications (in-app and email) for that type or group.</p>
+    <form method="post" action="/notifications/mute" class="space-y-3">
+      {{range .MuteScopes}}
+      <label class="flex items-center gap-3 text-sm">
+        <input type="checkbox" name="mute" value="{{.Scope}}" {{if .Muted}}checked{{end}}
+               class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+        <span>{{.Label}}</span>
+      </label>
+      {{end}}
+      <button class="btn-primary mt-2" type="submit">Save settings</button>
+    </form>
+  </div>
+</div>
+{{end}}

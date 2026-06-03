@@ -1,80 +1,107 @@
-# Theralert - Self-Hosting Guide
+# Theralert
 
-This guide will walk you through setting up and running Theralert on your own server using Docker and Docker Compose.
+A notification web app for assisted-living and nursing facilities. Staff log and
+schedule patient activities; patients and their family members get notified by
+email and in real time inside the app. **No personal medical information is
+stored** — only name, email, and password.
 
-## Prerequisites
+Built as a single self-contained Go binary: server-rendered HTML
+(`html/template`) + [HTMX](https://htmx.org) for live updates + Tailwind CSS,
+backed by PostgreSQL. No Node.js runtime in production.
 
-Before you begin, ensure you have the following installed on your server:
+## Features
 
-* **Docker**
-* **Docker Compose** (comes with Docker Desktop, or install standalone if on Linux)
-* **Git**
+- **Organizations (multi-tenant):** each facility is isolated, with its own
+  admins, staff, patients, and family members.
+- **Roles:** admin, staff, patient, family — with separate staff and
+  patient/family views.
+- **Admin:** create staff accounts, promote/demote admins (the last admin can't
+  be removed), and delete the organization (guarded, type-to-confirm).
+- **Registration:** patients and family self-register with a facility code,
+  optionally restricted to an allowed IP range.
+- **Groups:** a patient plus any number of family members.
+- **Events & calendar:** log activities in real time, schedule one-time future
+  events, and create weekly-recurring events. Color-coded categories (therapy,
+  activity, Dr. appointment) on a printable month calendar.
+- **Notifications:** TZ-correct email plus live in-app updates (a bell badge and
+  toasts via Server-Sent Events), with per-user selective muting (everything, by
+  category, or by group).
+- **Real-time clock** in the configured timezone.
 
-## Setup Steps
+## Configuration
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/aniwag2/Theralert.git
-    cd Theralert
-    ```
+Copy `.env.example` to `.env` and fill in the values:
 
-2.  **Configure Environment Variables:**
-    Your application requires several environment variables for configuration, including database credentials and NextAuth.
-    ```bash
-    cp .env.example .env
-    ```
-    Now, open the newly created `.env` file in your favorite text editor (`nano .env` or `vim .env`) and fill in the values:
-    * `NEXTAUTH_SECRET`: **Crucial! Generate a strong, random string.** You can use `openssl rand -base64 32` on Linux/macOS, or an online secret generator. This is vital for security.
-    * `NEXTAUTH_URL`: The full URL where your application will be accessible. For example, `https://theralert.your-domain.com`. If testing locally, `http://localhost:3000`.
-    * `DB_NAME`, `DB_USER`, `DB_PASSWORD`: Set strong, unique credentials for your PostgreSQL database.
-    * `DATABASE_URL`: This will be constructed automatically from the `DB_USER`, `DB_PASSWORD`, `db` (the service name in `docker-compose.yml`), `3306` (MySQL default port), and `DB_NAME`.
+| Variable        | Required | Description |
+|-----------------|----------|-------------|
+| `SESSION_SECRET`| yes      | Long random string for signing session cookies (`openssl rand -base64 32`). |
+| `DATABASE_URL`  | yes\*    | Postgres connection string. Built from `DB_*` automatically in Docker Compose. |
+| `BASE_URL`      | recommended | Public URL of the app. |
+| `LOGOUT_URL`    | no       | Where the logout button redirects (default `https://theralert.aniwaghray.com`). |
+| `SECURE_COOKIES`| no       | `true` when served over HTTPS (default `false`). |
+| `TZ`            | no       | IANA timezone for clock/calendar/email, e.g. `America/New_York` (default UTC). |
+| `ALLOWED_CIDRS` | no       | Comma-separated CIDRs/IPs allowed to register. Empty = allow all. |
+| `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`MAIL_FROM` | no | SMTP settings. If `SMTP_HOST` is empty, email is skipped (in-app notifications still work). |
+| `DB_NAME`/`DB_USER`/`DB_PASSWORD` | Docker only | Used by Docker Compose to provision Postgres. |
 
-3.  **Start the Application:**
-    Navigate to the root of the `Theralert` directory (where `docker-compose.yml` is located) and run:
+\* `DATABASE_URL` is required when running the binary directly; Docker Compose
+builds it from the `DB_*` variables.
 
-    ```bash
-    # docker compose up -d
-    ```
-    * The `-d` flag runs the containers in detached mode (in the background).
-    * The first run will download the necessary image (`node:20-alpine`, `mysql:8.0`), build your Next.js application, and start the services. This might take a few minutes.
+## Running with Docker (recommended)
 
-4.  **Verify Running Containers:**
-    ```bash
-    # docker ps
-    ```
-    You should see `theralert-app` and `theralert-db` listed as running.
+```bash
+cp .env.example .env       # set SESSION_SECRET, DB_PASSWORD, BASE_URL, TZ, SMTP_*
+docker compose up -d --build
+```
 
-5.  **Access Your Application:**
-    Your Next.js application should now be accessible on `http://localhost:3000` (from the server where you deployed).
+This starts the app on port `3002` and a PostgreSQL container. The app runs
+database migrations automatically on startup. Put it behind a reverse proxy
+(Cloudflare Tunnel, Caddy, nginx, …) for HTTPS and a custom domain.
 
-    **To expose it to the internet securely:**
-    We highly recommend using a reverse proxy like **Cloudflare Tunnels** (as discussed previously) or Nginx. This will allow you to use a custom domain and provide HTTPS without opening inbound firewall ports.
+## Running locally (development)
 
-    * Refer to the Cloudflare Tunnels documentation on how to expose a local service (`http://localhost:3000`) to your domain.
+Requires Go 1.25+ and a reachable PostgreSQL.
 
-## Management Commands
+```bash
+make run     # downloads the Tailwind CLI if needed, builds CSS, runs the server
+```
 
-* **Stop the application:**
-    ```bash
-    # docker compose down
-    ```
-* **Restart the application (after changes or updates):**
-    ```bash
-    # docker compose restart
-    ```
-* **View logs:**
-    ```bash
-    # docker compose logs -f
-    # Or for a specific service:
-    # docker logs -f theralert-db
-    ```
-* **Rebuild and update the application (after pulling new code):**
-    ```bash
-    git pull origin main # Or your main branch
-    # docker compose build --no-cache && docker compose up -d --force-recreate
-    ```
+`make run` reads `.env`. Point `DATABASE_URL` at your local Postgres, e.g.:
 
-## Important Considerations
+```
+DATABASE_URL=postgres://theralert:devpass@localhost:5432/theralert?sslmode=disable
+```
 
-* **Security:** Ensure `NEXTAUTH_SECRET` is truly random and strong. Keep your server's operating system updated.
-* **Data Persistence:** The `theralert_db_data` volume ensures your database data persists across container restarts. Do not delete this volume unless you intend to wipe your database.
+Other targets: `make build` (compile `./theralert`), `make css` /
+`make css-watch` (rebuild Tailwind), `make tidy`.
+
+## First run
+
+With an empty database the app redirects to `/setup`, where you create the first
+organization and its admin account. After that, staff/admins sign in at `/login`
+and patients/family register at `/register` using the facility code.
+
+## Project structure
+
+```
+cmd/server/          entrypoint + routes
+internal/
+  config/            env configuration
+  db/                pgx pool + embedded migrations (db/migrations/*.sql)
+  models/            data types + store (DB access)
+  auth/              sessions, password hashing, role/auth middleware
+  email/             SMTP sender (TZ-correct)
+  realtime/          Server-Sent Events hub
+  handlers/          HTTP handlers
+web/
+  render.go          template renderer (cache-busted CSS, TZ-aware helpers)
+  templates/*.html   layout + pages
+  static/            input.css -> app.css (Tailwind), htmx, favicon
+tailwind.theralert.config.js   Tailwind config
+Dockerfile, docker-compose.yml
+```
+
+## Tech stack
+
+Go · chi (routing) · pgx (PostgreSQL) · gorilla/sessions · html/template · HTMX ·
+Tailwind CSS (standalone CLI) · SSE · SMTP.

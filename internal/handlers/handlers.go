@@ -9,6 +9,7 @@ import (
 
 	"github.com/aniwag2/theralert/internal/auth"
 	"github.com/aniwag2/theralert/internal/config"
+	"github.com/aniwag2/theralert/internal/email"
 	"github.com/aniwag2/theralert/internal/models"
 	"github.com/aniwag2/theralert/internal/realtime"
 	"github.com/aniwag2/theralert/web"
@@ -24,6 +25,7 @@ type Handlers struct {
 	Auth  *auth.Manager
 	View  *web.Renderer
 	Hub   *realtime.Hub
+	Email *email.Sender
 	Loc   *time.Location
 }
 
@@ -34,6 +36,9 @@ func (h *Handlers) view(r *http.Request) map[string]any {
 		data["User"] = u
 		if org, err := h.Store.OrganizationByID(r.Context(), u.OrgID); err == nil {
 			data["Org"] = org
+		}
+		if n, err := h.Store.UnreadCount(r.Context(), u.ID); err == nil {
+			data["Unread"] = n
 		}
 	}
 	return data

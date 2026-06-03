@@ -208,7 +208,8 @@ func (h *Handlers) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(phase3): notify group recipients (email + SSE), honoring mute prefs.
+	// Notify patient + family (in-app + email), honoring mute preferences.
+	h.notifyGroup(r.Context(), e, g)
 
 	http.Redirect(w, r, redirect+"&flash="+urlEncode("Event added."), http.StatusSeeOther)
 }

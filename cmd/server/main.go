@@ -10,6 +10,7 @@ import (
 	"github.com/aniwag2/theralert/internal/auth"
 	"github.com/aniwag2/theralert/internal/config"
 	"github.com/aniwag2/theralert/internal/db"
+	"github.com/aniwag2/theralert/internal/email"
 	"github.com/aniwag2/theralert/internal/handlers"
 	"github.com/aniwag2/theralert/internal/models"
 	"github.com/aniwag2/theralert/internal/realtime"
@@ -42,8 +43,9 @@ func main() {
 		log.Fatalf("templates: %v", err)
 	}
 	hub := realtime.NewHub()
+	mailer := email.New(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass, cfg.MailFrom, cfg.Location)
 
-	h := &handlers.Handlers{Cfg: cfg, Store: store, Auth: authMgr, View: renderer, Hub: hub, Loc: cfg.Location}
+	h := &handlers.Handlers{Cfg: cfg, Store: store, Auth: authMgr, View: renderer, Hub: hub, Email: mailer, Loc: cfg.Location}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -74,6 +76,10 @@ func main() {
 		pr.Post("/profile/delete", h.DeleteAccount)
 		pr.Get("/calendar", h.Calendar)
 		pr.Get("/sse", h.Events)
+		pr.Get("/notifications", h.Notifications)
+		pr.Get("/notifications/count", h.NotifCount)
+		pr.Post("/notifications/read", h.MarkRead)
+		pr.Post("/notifications/mute", h.SetMutes)
 	})
 
 	// Staff/admin routes (groups + event management).
