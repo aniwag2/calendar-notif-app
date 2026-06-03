@@ -56,14 +56,18 @@ func (h *Handlers) Calendar(w http.ResponseWriter, r *http.Request) {
 	}
 	data["Selected"] = selected
 
+	loc := h.Loc
+	if loc == nil {
+		loc = time.Local
+	}
+
 	// Month navigation (?y=&m=), default current month.
-	now := time.Now()
+	now := time.Now().In(loc)
 	year, _ := strconv.Atoi(r.URL.Query().Get("y"))
 	month, _ := strconv.Atoi(r.URL.Query().Get("m"))
 	if year == 0 || month < 1 || month > 12 {
 		year, month = now.Year(), int(now.Month())
 	}
-	loc := time.Local
 	monthStart := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, loc)
 	monthEnd := monthStart.AddDate(0, 1, 0)
 
@@ -75,7 +79,7 @@ func (h *Handlers) Calendar(w http.ResponseWriter, r *http.Request) {
 	}
 
 	events, _ := h.Store.EventsForCalendar(r.Context(), selected.ID, gridStart, gridEnd)
-	occByDay := expandOccurrences(events, gridStart, gridEnd)
+	occByDay := expandOccurrences(events, gridStart, gridEnd, loc)
 
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
 	var weeks [][]dayCell
@@ -109,17 +113,17 @@ func (h *Handlers) Calendar(w http.ResponseWriter, r *http.Request) {
 
 // expandOccurrences turns events (incl. weekly recurring) into per-day occurrences
 // within [from,to), keyed by YYYY-MM-DD.
-func expandOccurrences(events []models.Event, from, to time.Time) map[string][]Occurrence {
+func expandOccurrences(events []models.Event, from, to time.Time, loc *time.Location) map[string][]Occurrence {
 	out := make(map[string][]Occurrence)
 	add := func(e models.Event, start time.Time) {
 		if start.Before(from) || !start.Before(to) {
 			return
 		}
-		key := start.In(time.Local).Format("2006-01-02")
-		out[key] = append(out[key], Occurrence{Event: e, Start: start})
+		key := start.In(loc).Format("2006-01-02")
+		out[key] = append(out[key], Occurrence{Event: e, Start: start.In(loc)})
 	}
 	for _, e := range events {
-		start := e.StartsAt.In(time.Local)
+		start := e.StartsAt.In(loc)
 		switch e.Recurrence {
 		case "weekly":
 			// Advance to the first occurrence within the window, then step weekly.
@@ -170,13 +174,17 @@ func (h *Handlers) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		recurrence = "none"
 	}
 
+	loc := h.Loc
+	if loc == nil {
+		loc = time.Local
+	}
 	// Determine start time: "now" for instant logging, else the provided datetime.
 	var start time.Time
 	if r.FormValue("when") == "now" || r.FormValue("datetime") == "" {
 		start = time.Now()
 	} else {
-		// HTML datetime-local: "2006-01-02T15:04"
-		t, perr := time.ParseInLocation("2006-01-02T15:04", r.FormValue("datetime"), time.Local)
+		// HTML datetime-local ("2006-01-02T15:04") is interpreted in the app timezone.
+		t, perr := time.ParseInLocation("2006-01-02T15:04", r.FormValue("datetime"), loc)
 		if perr != nil {
 			http.Redirect(w, r, redirect+"&error="+urlEncode("Invalid date/time."), http.StatusSeeOther)
 			return

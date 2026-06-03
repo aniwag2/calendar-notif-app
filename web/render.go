@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"hash/fnv"
 	"html/template"
 	"io/fs"
 	"net/http"
 	"strings"
+	"time"
 )
 
 //go:embed templates/*.html
@@ -18,20 +20,46 @@ var StaticFS embed.FS
 
 // Renderer parses page templates, each composed with the shared layout.
 type Renderer struct {
-	pages map[string]*template.Template
+	pages    map[string]*template.Template
+	cssVer   string
+	location *time.Location
 }
 
-var funcs = template.FuncMap{
-	"title": strings.Title,
+// assetVersion returns a short stable hash of the compiled CSS for cache-busting.
+func assetVersion() string {
+	data, err := StaticFS.ReadFile("static/css/app.css")
+	if err != nil {
+		return "0"
+	}
+	h := fnv.New32a()
+	_, _ = h.Write(data)
+	return fmt.Sprintf("%x", h.Sum32())
 }
 
 // NewRenderer parses layout.html + every other template into per-page sets.
-func NewRenderer() (*Renderer, error) {
+// loc is the timezone used by the time-formatting template helper.
+func NewRenderer(loc *time.Location) (*Renderer, error) {
+	if loc == nil {
+		loc = time.Local
+	}
+	r := &Renderer{
+		pages:    make(map[string]*template.Template),
+		cssVer:   assetVersion(),
+		location: loc,
+	}
+
+	funcs := template.FuncMap{
+		// cssURL returns the stylesheet path with a content hash so browsers
+		// never serve a stale cached copy after a rebuild.
+		"cssURL": func() string { return "/static/css/app.css?v=" + r.cssVer },
+		// tfmt formats a time in the configured display timezone.
+		"tfmt": func(layout string, t time.Time) string { return t.In(r.location).Format(layout) },
+	}
+
 	entries, err := fs.Glob(templateFS, "templates/*.html")
 	if err != nil {
 		return nil, err
 	}
-	r := &Renderer{pages: make(map[string]*template.Template)}
 	for _, e := range entries {
 		name := strings.TrimSuffix(strings.TrimPrefix(e, "templates/"), ".html")
 		if name == "layout" {

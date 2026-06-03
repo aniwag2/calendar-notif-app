@@ -6,6 +6,7 @@ services:
       - "3002:3002"
     environment:
       ADDR: ":3002"
+      TZ: ${TZ:-UTC}
       BASE_URL: ${BASE_URL}
       LOGOUT_URL: ${LOGOUT_URL:-https://theralert.aniwaghray.com}
       DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable

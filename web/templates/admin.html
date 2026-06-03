@@ -93,7 +93,7 @@
       family members, groups, and events. This cannot be undone.
     </p>
     <form method="post" action="/admin/org/delete" class="flex flex-col sm:flex-row gap-3 sm:items-end"
-          onsubmit="return confirm('Permanently delete this entire organization and all its data?');">
+          onsubmit="return confirm('WARNING: This permanently deletes {{.Org.Name}} and ALL of its staff, patients, family members, groups, and events. This cannot be undone.\n\nAre you absolutely sure you want to continue?');">
       <div class="flex-1">
         <label class="label" for="confirm">Type the facility code <code class="bg-gray-100 px-1 rounded">{{.Org.Slug}}</code> to confirm</label>
         <input class="input" id="confirm" name="confirm" type="text" autocomplete="off" placeholder="{{.Org.Slug}}">

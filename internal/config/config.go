@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -27,6 +28,9 @@ type Config struct {
 
 	// Registration IP allowlist. Empty means allow all.
 	AllowedCIDRs []*net.IPNet
+
+	// Location is the display timezone for the clock, calendar, and emails.
+	Location *time.Location
 }
 
 // Load reads configuration from the environment (and a .env file if present).
@@ -44,6 +48,17 @@ func Load() (*Config, error) {
 		SMTPUser:      os.Getenv("SMTP_USER"),
 		SMTPPass:      os.Getenv("SMTP_PASS"),
 		MailFrom:      getenv("MAIL_FROM", os.Getenv("SMTP_USER")),
+	}
+
+	// Timezone: explicit TZ env wins; otherwise use the server's local zone.
+	if tz := strings.TrimSpace(os.Getenv("TZ")); tz != "" {
+		loc, err := time.LoadLocation(tz)
+		if err != nil {
+			return nil, fmt.Errorf("invalid TZ %q: %w", tz, err)
+		}
+		c.Location = loc
+	} else {
+		c.Location = time.Local
 	}
 
 	secret := os.Getenv("SESSION_SECRET")

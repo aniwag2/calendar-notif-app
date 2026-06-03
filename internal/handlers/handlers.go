@@ -24,6 +24,7 @@ type Handlers struct {
 	Auth  *auth.Manager
 	View  *web.Renderer
 	Hub   *realtime.Hub
+	Loc   *time.Location
 }
 
 // view builds the common template data with the current user and their org.
@@ -67,10 +68,14 @@ func (h *Handlers) Root(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
-// Clock returns the current server time as an HTMX fragment.
+// Clock returns the current time in the configured timezone as an HTMX fragment.
 func (h *Handlers) Clock(w http.ResponseWriter, r *http.Request) {
+	loc := h.Loc
+	if loc == nil {
+		loc = time.Local
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(time.Now().Format("Mon Jan 2 · 3:04:05 PM")))
+	_, _ = w.Write([]byte(time.Now().In(loc).Format("Mon Jan 2 · 3:04:05 PM MST")))
 }
 
 // --- First-run setup ---

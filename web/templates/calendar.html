@@ -77,8 +77,8 @@
               {{range .Occurrences}}
               <div class="rounded px-1.5 py-0.5 text-[11px] leading-tight text-white truncate
                           {{if eq .Event.Category "therapy"}}bg-therapy{{else if eq .Event.Category "appointment"}}bg-appointment{{else}}bg-activity{{end}}"
-                   title="{{.Start.Format "3:04 PM"}} — {{.Event.Title}}{{if .Event.Description}}: {{.Event.Description}}{{end}}">
-                <span class="font-medium">{{.Start.Format "3:04 PM"}}</span> {{.Event.Title}}
+                   title="{{tfmt "3:04 PM" .Start}} — {{.Event.Title}}{{if .Event.Description}}: {{.Event.Description}}{{end}}">
+                <span class="font-medium">{{tfmt "3:04 PM" .Start}}</span> {{.Event.Title}}
                 {{if eq .Event.Recurrence "weekly"}}<span title="repeats weekly">↻</span>{{end}}
               </div>
               {{end}}
@@ -145,7 +145,7 @@
               <span class="inline-block h-2 w-2 rounded-full align-middle
                 {{if eq .Category "therapy"}}bg-therapy{{else if eq .Category "appointment"}}bg-appointment{{else}}bg-activity{{end}}"></span>
               <span class="font-medium">{{.Title}}</span>
-              <span class="text-gray-400">· {{.StartsAt.Format "Jan 2, 3:04 PM"}}{{if eq .Recurrence "weekly"}} ↻{{end}}</span>
+              <span class="text-gray-400">· {{tfmt "Jan 2, 3:04 PM" .StartsAt}}{{if eq .Recurrence "weekly"}} ↻{{end}}</span>
             </div>
             {{if $.CanEdit}}
             <form method="post" action="/events/delete">

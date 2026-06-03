@@ -37,13 +37,13 @@ func main() {
 
 	store := models.NewStore(database.Pool)
 	authMgr := auth.NewManager(cfg.SessionSecret, cfg.SecureCookies, store)
-	renderer, err := web.NewRenderer()
+	renderer, err := web.NewRenderer(cfg.Location)
 	if err != nil {
 		log.Fatalf("templates: %v", err)
 	}
 	hub := realtime.NewHub()
 
-	h := &handlers.Handlers{Cfg: cfg, Store: store, Auth: authMgr, View: renderer, Hub: hub}
+	h := &handlers.Handlers{Cfg: cfg, Store: store, Auth: authMgr, View: renderer, Hub: hub, Loc: cfg.Location}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
