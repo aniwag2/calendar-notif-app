@@ -1,0 +1,46 @@
+{{define "title"}}Register · Theralert{{end}}
+{{define "content"}}
+<div class="min-h-[70vh] flex items-center justify-center">
+  <div class="w-full max-w-md card">
+    <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">Create your account</h1>
+    <p class="text-center text-gray-500 mb-6">For patients and family members</p>
+
+    {{if .Error}}
+    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/register" class="space-y-4">
+      <div>
+        <label class="label" for="org">Facility code</label>
+        <input class="input" id="org" name="org" type="text" required value="{{.OrgSlug}}"
+               placeholder="e.g. sunrise-manor">
+      </div>
+      <div>
+        <label class="label" for="name">Full name</label>
+        <input class="input" id="name" name="name" type="text" required value="{{.Name}}">
+      </div>
+      <div>
+        <label class="label" for="email">Email</label>
+        <input class="input" id="email" name="email" type="email" required value="{{.Email}}">
+      </div>
+      <div>
+        <label class="label" for="role">I am a</label>
+        <select class="input" id="role" name="role">
+          <option value="patient">Patient</option>
+          <option value="family">Family member</option>
+        </select>
+      </div>
+      <div>
+        <label class="label" for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" required>
+        <p class="text-xs text-gray-500 mt-1">At least 8 characters, including a number and a special character.</p>
+      </div>
+      <button class="btn-primary w-full" type="submit">Register</button>
+    </form>
+
+    <p class="text-center text-sm text-gray-500 mt-6">
+      Already have an account? <a href="/login" class="text-indigo-600 font-medium hover:underline">Sign in</a>
+    </p>
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,29 @@
+{{define "title"}}Sign in · Theralert{{end}}
+{{define "content"}}
+<div class="min-h-[70vh] flex items-center justify-center">
+  <div class="w-full max-w-md card">
+    <h1 class="text-3xl font-extrabold text-indigo-700 text-center">Theralert</h1>
+    <p class="text-center text-gray-500 mb-6">Sign in to your account</p>
+
+    {{if .Error}}
+    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/login" class="space-y-4">
+      <div>
+        <label class="label" for="email">Email</label>
+        <input class="input" id="email" name="email" type="email" required value="{{.Email}}">
+      </div>
+      <div>
+        <label class="label" for="password">Password</label>
+        <input class="input" id="password" name="password" type="password" required>
+      </div>
+      <button class="btn-primary w-full" type="submit">Sign in</button>
+    </form>
+
+    <p class="text-center text-sm text-gray-500 mt-6">
+      No account? <a href="/register" class="text-indigo-600 font-medium hover:underline">Register</a>
+    </p>
+  </div>
+</div>
+{{end}}

@@ -33,3 +33,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# go / theralert rewrite
+/tailwindcss
+/tailwindcss.exe
+/theralert
+/theralert.exe
+/web/static/css/app.css
+.env

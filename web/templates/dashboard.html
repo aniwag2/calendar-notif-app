@@ -1,0 +1,41 @@
+{{define "title"}}Dashboard · Theralert{{end}}
+{{define "content"}}
+<div class="space-y-8">
+  <div class="flex items-end justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">
+        {{if .User.IsStaffSide}}Staff Dashboard{{else}}Welcome, {{.User.Name}}{{end}}
+      </h1>
+      <p class="text-gray-500">{{.Org.Name}}</p>
+    </div>
+  </div>
+
+  {{if .User.IsStaffSide}}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-2">Groups</h2>
+      <p class="text-gray-500 text-sm">Create and manage patient groups. <span class="italic">(Coming in Phase 2)</span></p>
+    </div>
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-2">Log activity</h2>
+      <p class="text-gray-500 text-sm">Log activities and events in real time. <span class="italic">(Coming in Phase 2)</span></p>
+    </div>
+    <div class="card lg:col-span-2">
+      <h2 class="text-xl font-semibold mb-2">Calendar</h2>
+      <p class="text-gray-500 text-sm">Color-coded, printable calendar with recurring and one-time events. <span class="italic">(Coming in Phase 2)</span></p>
+    </div>
+  </div>
+  {{else}}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-2">Your calendar</h2>
+      <p class="text-gray-500 text-sm">Activities and events for your group. <span class="italic">(Coming in Phase 2)</span></p>
+    </div>
+    <div class="card">
+      <h2 class="text-xl font-semibold mb-2">Notifications</h2>
+      <p class="text-gray-500 text-sm">Live updates and mute settings. <span class="italic">(Coming in Phase 3)</span></p>
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}

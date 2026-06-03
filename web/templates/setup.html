@@ -1,0 +1,38 @@
+{{define "title"}}First-time setup · Theralert{{end}}
+{{define "content"}}
+<div class="min-h-[70vh] flex items-center justify-center">
+  <div class="w-full max-w-md card">
+    <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">Welcome to Theralert</h1>
+    <p class="text-center text-gray-500 mb-6">Create your first organization and admin account</p>
+
+    {{if .Error}}
+    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/setup" class="space-y-4">
+      <div>
+        <label class="label" for="orgname">Facility name</label>
+        <input class="input" id="orgname" name="orgname" type="text" required placeholder="Sunrise Manor">
+      </div>
+      <div>
+        <label class="label" for="slug">Facility code (login identifier)</label>
+        <input class="input" id="slug" name="slug" type="text" required placeholder="sunrise-manor">
+      </div>
+      <hr class="my-2">
+      <div>
+        <label class="label" for="name">Admin name</label>
+        <input class="input" id="name" name="name" type="text" required>
+      </div>
+      <div>
+        <label class="label" for="email">Admin email</label>
+        <input class="input" id="email" name="email" type="email" required>
+      </div>
+      <div>
+        <label class="label" for="password">Admin password</label>
+        <input class="input" id="password" name="password" type="password" required>
+      </div>
+      <button class="btn-primary w-full" type="submit">Create organization</button>
+    </form>
+  </div>
+</div>
+{{end}}

@@ -1,60 +1,28 @@
-# Stage 1: Install dependencies and build the Next.js application
-FROM node:20-alpine AS builder
+# Theralert (Go rewrite) — multi-stage build.
+# Stage 1 compiles Tailwind CSS and the Go binary; Stage 2 is a tiny runtime image.
 
-# Set working directory inside the container
-WORKDIR /app
+FROM golang:1.25-bookworm AS build
+WORKDIR /src
 
-# Copy package.json and lock files
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+# Cache module downloads.
+COPY go.mod go.sum ./
+RUN go mod download
 
-# Install dependencies based on lock file presence
-RUN \
-  if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  elif [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
-  else npm install --frozen-lockfile; \
-  fi
-
-# Copy the rest of the application code
 COPY . .
 
-ENV NEXT_TELEMETRY_DISABLED 1
+# Compile Tailwind CSS with the standalone CLI (no Node runtime needed).
+ARG TAILWIND_VERSION=v3.4.17
+RUN curl -sSL -o /usr/local/bin/tailwindcss \
+      https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-linux-x64 \
+    && chmod +x /usr/local/bin/tailwindcss \
+    && tailwindcss -c tailwind.theralert.config.js \
+        -i web/static/css/input.css -o web/static/css/app.css --minify
 
-# Build the Next.js application for production
-RUN npm run build
+# Build a static binary (templates + CSS + JS are embedded).
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /theralert ./cmd/server
 
-# Stage 2: Create the lean production image
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-
-# Install necessary tools as root
-# Key Change: Add mariadb-connector-c-dev to provide caching_sha2_password.so
-RUN apk add --no-cache mysql-client bash openssl mariadb-connector-c-dev
-
-# Download wait-for-it.sh and make it executable AS ROOT
-RUN wget -q https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -O /usr/bin/wait-for-it.sh && \
-    chmod +x /usr/bin/wait-for-it.sh
-
-# Now create the non-root user and switch to it
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-USER nextjs
-
-# Copy the built Next.js application from the builder stage with correct ownership
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy the migration script and the SQL schema file with correct ownership
-COPY --chown=nextjs:nodejs migrate.sh /app/migrate.sh
-COPY --chown=nextjs:nodejs schema.sql /app/schema.sql
-
-# Make the migration script executable
-RUN chmod +x /app/migrate.sh
-
+FROM alpine:3.20
+RUN apk add --no-cache ca-certificates tzdata
+COPY --from=build /theralert /theralert
 EXPOSE 3002
-
-CMD ["/app/migrate.sh"]
+ENTRYPOINT ["/theralert"]

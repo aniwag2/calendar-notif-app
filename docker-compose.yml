@@ -1,41 +1,41 @@
-version: '3.8'
-
 services:
   theralert:
-    image: awaghray/theralert:latest
+    build: .
     container_name: theralert
     ports:
       - "3002:3002"
     environment:
-      NEXTAUTH_URL: ${NEXTAUTH_URL}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      NODE_ENV: production
-      EMAIL_USER: ${EMAIL_USER}
-      EMAIL_PASS: ${EMAIL_PASS}
-
-      DB_HOST: db
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-
+      ADDR: ":3002"
+      BASE_URL: ${BASE_URL}
+      LOGOUT_URL: ${LOGOUT_URL:-https://theralert.aniwaghray.com}
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
+      SESSION_SECRET: ${SESSION_SECRET}
+      SECURE_COOKIES: ${SECURE_COOKIES:-true}
+      ALLOWED_CIDRS: ${ALLOWED_CIDRS:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   db:
-    image: mysql:8.0
+    image: postgres:16-alpine
     container_name: theralert-db
     environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      # IMPORTANT: Set default authentication plugin for new users to mysql_native_password
-      # This resolves compatibility issues with older MySQL clients like the one in Alpine's mysql-client package.
-      # This is suitable for internal Docker network connections.
-      MYSQL_AUTHENTICATION_PLUGIN: mysql_native_password # <--- NEW LINE
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - theralert_db_data:/var/lib/mysql
+      - theralert_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
 
 volumes:
